@@ -1,5 +1,6 @@
 // ブラウザ確認用のモックバックエンド（npm run dev を Tauri の外で開いたときだけ読み込む）。
 // URLパラメータ: ?missing=aws|plugin|both  前提ツールが無い状態 / ?loadError=1  設定読み込みエラー / ?empty=1  接続先なし
+//               ?importBad=1  JSONインポートのファイル選択で壊れたファイルを返す
 
 import { emit } from "@tauri-apps/api/event";
 import { mockIPC } from "@tauri-apps/api/mocks";
@@ -8,6 +9,7 @@ import type {
   ImportPreview,
   ImportRow,
   LogLine,
+  MoveDirection,
   Prerequisites,
   Target,
   TargetInput,
@@ -192,6 +194,43 @@ function validate(input: TargetInput): string | null {
   return null;
 }
 
+function saveTarget(input: TargetInput, insertAfter: string | null) {
+  const err = validate(input);
+  if (err) throw err;
+  const app = input.app.trim();
+  const profile = input.profile.trim();
+  const dup = targets.find((t) => t.id !== input.id && t.profile === profile && t.env === input.env && t.app === app);
+  if (dup) throw `同じプロファイル・環境・アプリ名の接続先がすでにあります（「${dup.name}」）`;
+  const port = input.localPort ?? 13306;
+  if (input.id) {
+    const cur = targets.find((t) => t.id === input.id);
+    if (!cur) throw "接続先が見つかりません";
+    const st = rt(cur.id).status;
+    if (st !== "idle" && st !== "error" && (cur.env !== input.env || cur.localPort !== port)) {
+      throw "接続中は環境とポートを変更できません";
+    }
+  }
+  const target: Target = {
+    id: input.id ?? `t-${Math.random().toString(36).slice(2, 9)}`,
+    name: input.name.trim(),
+    profile: input.profile.trim(),
+    env: input.env,
+    app,
+    localPort: port,
+  };
+  if (input.id) {
+    targets = targets.map((t) => (t.id === input.id ? target : t));
+  } else {
+    // 新規は末尾、複製は複製元のすぐ下
+    const at = insertAfter ? targets.findIndex((t) => t.id === insertAfter) + 1 : targets.length;
+    targets = [...targets.slice(0, at), target, ...targets.slice(at)];
+  }
+  const warnings = targets
+    .filter((t) => t.id !== target.id && t.localPort === port)
+    .map((t) => `ポート ${port} はほかの接続先（${label(t)}）と重複しています。同時には接続できません。`);
+  return { target, warnings };
+}
+
 let lastPreview: ImportPreview | null = null;
 
 const handlers: Record<string, (a: any) => unknown> = {
@@ -199,36 +238,23 @@ const handlers: Record<string, (a: any) => unknown> = {
   list_profiles: () => ["acme-portal", "billing", "default", "sandbox"],
   list_runtimes: () => targets.map((t) => rt(t.id)),
 
-  save_target: ({ input }: { input: TargetInput }) => {
-    const err = validate(input);
-    if (err) throw err;
-    const app = input.app.trim();
-    const dup = targets.find(
-      (t) => t.id !== input.id && t.profile === input.profile && t.env === input.env && t.app === app,
-    );
-    if (dup) throw `同じプロファイル・環境・アプリ名の接続先（${label(dup)}）が既にあります`;
-    const port = input.localPort ?? 13306;
-    if (input.id) {
-      const cur = targets.find((t) => t.id === input.id);
-      if (!cur) throw "接続先が見つかりません";
-      const st = rt(cur.id).status;
-      if (st !== "idle" && st !== "error" && (cur.env !== input.env || cur.localPort !== port)) {
-        throw "接続中は環境とポートを変更できません";
-      }
+  save_target: ({ input }: { input: TargetInput }) => saveTarget(input, null),
+
+  move_target: ({ id, direction }: { id: string; direction: MoveDirection }) => {
+    const i = targets.findIndex((t) => t.id === id);
+    if (i < 0) throw `接続先が見つかりません（ID: ${id}）`;
+    const j = direction === "up" ? i - 1 : i + 1;
+    if (j >= 0 && j < targets.length) {
+      const next = [...targets];
+      [next[i], next[j]] = [next[j], next[i]];
+      targets = next;
     }
-    const target: Target = {
-      id: input.id ?? `t-${Math.random().toString(36).slice(2, 9)}`,
-      name: input.name.trim(),
-      profile: input.profile.trim(),
-      env: input.env,
-      app,
-      localPort: port,
-    };
-    targets = input.id ? targets.map((t) => (t.id === input.id ? target : t)) : [...targets, target];
-    const warnings = targets
-      .filter((t) => t.id !== target.id && t.localPort === port)
-      .map((t) => `ポート ${port} はほかの接続先（${label(t)}）と重複しています。同時には接続できません。`);
-    return { target, warnings };
+    return targets.map((t) => ({ ...t }));
+  },
+
+  duplicate_target: ({ sourceId, input }: { sourceId: string; input: TargetInput }) => {
+    if (!targets.some((t) => t.id === sourceId)) throw `接続先が見つかりません（ID: ${sourceId}）`;
+    return saveTarget({ ...input, id: null }, sourceId);
   },
 
   delete_target: ({ id }: { id: string }) => {
@@ -356,7 +382,9 @@ const handlers: Record<string, (a: any) => unknown> = {
   quit_app: () => console.info("[mock] quit_app"),
 
   // ---- プラグイン ----
-  "plugin:dialog|open": () => "/Users/taro/Downloads/targets.json",
+  "plugin:dialog|open": () =>
+    // 実行中に URL を書き換えても切り替わるよう毎回読む
+    new URLSearchParams(location.search).has("importBad") ? "/Users/taro/Downloads/bad-targets.json" : "/Users/taro/Downloads/targets.json",
   "plugin:dialog|save": ({ options }: { options: { defaultPath?: string } }) =>
     `/Users/taro/Downloads/${options?.defaultPath ?? "untitled"}`,
   "plugin:dialog|message": ({ message, buttons }: { message: string; buttons: unknown }) => {

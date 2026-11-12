@@ -5,7 +5,15 @@ import { h, icon } from "./dom";
 
 export function openModal(dialog: HTMLDialogElement): void {
   document.body.appendChild(dialog);
-  dialog.addEventListener("close", () => dialog.remove());
+  dialog.addEventListener("close", () => {
+    dialog.remove();
+    // 開く前にフォーカスしていた要素が描き直しで消えていたら、選択中の行へ戻す
+    window.setTimeout(() => {
+      if (document.activeElement && document.activeElement !== document.body) return;
+      if (document.querySelector("dialog[open]")) return;
+      document.querySelector<HTMLElement>(".target-row.is-selected")?.focus();
+    }, 0);
+  });
   dialog.showModal();
 }
 

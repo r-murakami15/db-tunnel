@@ -5,6 +5,7 @@ import { api, events } from "./api";
 import { detailEl, initDetail } from "./ui/detail";
 import { errMsg, h, icon } from "./ui/dom";
 import { headerEl, initHeader } from "./ui/header";
+import { suppressNativeContextMenu } from "./ui/menu";
 import { initSettings, settingsEl } from "./ui/settings";
 import { initSidebar, sidebarEl } from "./ui/sidebar";
 import { emit, on, select, setPrereq, setRuntime, setTargets, store } from "./ui/store";
@@ -42,6 +43,7 @@ const mainScreen = h(
 export async function start(root: HTMLElement): Promise<void> {
   settingsEl.hidden = true;
   root.append(mainScreen, settingsEl);
+  suppressNativeContextMenu();
 
   on("view", () => {
     mainScreen.hidden = store.view !== "main";

@@ -9,7 +9,6 @@ import {
   type Target,
   type TargetRuntime,
 } from "../api";
-import { ENV_ORDER } from "./dom";
 
 export type Topic = "targets" | "runtime" | "selection" | "prereq" | "view" | "config";
 
@@ -71,17 +70,9 @@ export function selectedTarget(): Target | undefined {
   return store.targets.find((t) => t.id === store.selectedId);
 }
 
-export function sortTargets(list: Target[]): Target[] {
-  return [...list].sort(
-    (a, b) =>
-      a.profile.localeCompare(b.profile) ||
-      a.name.localeCompare(b.name, "ja") ||
-      ENV_ORDER[a.env] - ENV_ORDER[b.env],
-  );
-}
-
+/** 一覧を差し替える（並び順はバックエンドが保存している利用者の並び順のまま） */
 export function setTargets(list: Target[]): void {
-  store.targets = sortTargets(list);
+  store.targets = list;
   emit("targets");
   if (store.selectedId && !store.targets.some((t) => t.id === store.selectedId)) {
     select(store.targets[0]?.id ?? null);

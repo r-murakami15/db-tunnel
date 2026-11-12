@@ -177,6 +177,17 @@ a:hover {
 .btn-danger-outline:hover:not(:disabled) {
   background: #fef6f5;
 }
+.btn-primary-outline {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.btn-primary-outline:hover:not(:disabled) {
+  background: #eef3fe;
+}
+.btn-sm {
+  height: 32px;
+  padding: 0 12px;
+}
 
 .icon-btn {
   display: inline-flex;
@@ -474,21 +485,9 @@ input[type="radio"] {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 4px;
   margin: 0 -4px;
   padding: 0 4px 2px;
-}
-.target-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.group-label {
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 600;
-  padding: 4px 8px;
-  overflow-wrap: anywhere;
 }
 .target-row {
   display: flex;
@@ -509,6 +508,14 @@ input[type="radio"] {
   border-color: #bfd0f5;
   background: #eef3fe;
 }
+/* 右クリックメニューを開いている行 */
+.target-row.is-menu-target {
+  border-color: var(--primary);
+  border-style: dashed;
+}
+.target-row.is-menu-target:not(.is-selected) {
+  background: #fafbff;
+}
 .target-row-text {
   flex-grow: 1;
   display: flex;
@@ -516,11 +523,20 @@ input[type="radio"] {
   gap: 2px;
   min-width: 0;
 }
-.target-row-name {
-  font-weight: 600;
+.target-row-name,
+.target-row-sub {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.target-row-name {
+  font-weight: 600;
+}
+.add-btn[aria-expanded="true"],
+.add-btn[aria-expanded="true"]:hover:not(:disabled) {
+  background: var(--link-hover);
+  border-color: var(--link-hover);
+  box-shadow: 0 0 0 3px #bfd0f5;
 }
 .list-empty,
 .list-none {
@@ -905,6 +921,96 @@ input[type="radio"] {
   opacity: 0;
 }
 
+/* ---------- ポップアップメニュー ---------- */
+
+.menu {
+  position: fixed;
+  z-index: 900;
+  min-width: 176px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+.menu:focus {
+  outline: none;
+}
+.menu-sub {
+  min-width: 140px;
+}
+.menu-add {
+  width: 232px;
+}
+.mi {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: 500 13px var(--font);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mi-tall {
+  height: auto;
+  min-height: 44px;
+  padding: 6px 10px;
+}
+.mi > svg {
+  flex-shrink: 0;
+}
+.mi-label {
+  flex-grow: 1;
+}
+.mi:focus,
+.mi.is-open {
+  outline: none;
+  background: #eef3fe;
+  color: var(--primary);
+}
+.mi:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.mi[aria-disabled="true"] {
+  color: var(--idle-ring);
+  cursor: default;
+}
+.mi[aria-disabled="true"]:focus {
+  background: #f5f5f2;
+  color: var(--idle-ring);
+}
+.mi-tile {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mi-tile-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.mi-tile-plain {
+  background: var(--bg);
+  color: var(--text-2);
+}
+.menu-add .mi:focus {
+  color: var(--text);
+}
+
 /* ---------- ダイアログ ---------- */
 
 .modal {
@@ -936,6 +1042,32 @@ input[type="radio"] {
   margin: 0;
   font-size: 17px;
 }
+.dialog-head-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dialog-head-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.dialog-head-row h1 {
+  flex-grow: 1;
+}
+.dialog-body {
+  padding: 18px 22px;
+  overflow-y: auto;
+  min-height: 0;
+}
+/* 本文全体をスクロールさせる（表などを縮めない） */
+.dialog-body > * {
+  flex-shrink: 0;
+}
+.modal-import {
+  width: min(900px, calc(100vw - 48px));
+}
 .dialog-form {
   padding: 20px 22px;
   display: flex;
@@ -951,6 +1083,9 @@ input[type="radio"] {
   justify-content: space-between;
   gap: 8px;
   flex-shrink: 0;
+}
+.dialog-foot-end {
+  justify-content: flex-end;
 }
 .dialog-actions,
 .dialog-actions-end {
@@ -1009,6 +1144,23 @@ input[type="radio"] {
   border: 1px solid var(--border-input);
   border-radius: 8px;
   overflow: hidden;
+}
+.segmented.is-invalid {
+  border-color: var(--danger);
+}
+.dup-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--danger);
+}
+.dup-error:empty {
+  display: none;
+}
+.dup-error svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 .seg {
   display: flex;
@@ -1129,7 +1281,7 @@ input[type="radio"] {
   line-height: 1.6;
 }
 
-/* ---------- 設定・インポート ---------- */
+/* ---------- 設定・インポート表 ---------- */
 
 .back-link {
   display: inline-flex;
@@ -1315,6 +1467,21 @@ input[type="radio"] {
 .msg-warn {
   background: var(--warn-bg);
   color: var(--warn);
+}
+.format-details {
+  font-size: 13px;
+}
+.format-details summary {
+  width: fit-content;
+  color: var(--primary);
+  cursor: pointer;
+  border-radius: 4px;
+}
+.format-details summary:hover {
+  color: var(--link-hover);
+}
+.format-details[open] > .code-dark {
+  margin: 8px 0 6px;
 }
 .code-dark {
   margin: 0;

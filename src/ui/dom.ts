@@ -1,6 +1,6 @@
 // DOM構築の小さなヘルパー。ユーザー由来の文字列は必ずテキストノードとして入れる。
 
-import type { Env, Status } from "../api";
+import type { Status } from "../api";
 
 type Child = Node | string | number | null | undefined | false | Child[];
 type Handler = (ev: any) => void;
@@ -68,6 +68,11 @@ const ICONS: Record<string, string> = {
   folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   external: '<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  move: '<path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/>',
+  arrowUp: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  arrowDown: '<path d="M12 5v14M5 12l7 7 7-7"/>',
+  chevronRight: '<path d="M9 6l6 6-6 6"/>',
+  alertCircle: '<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5h.01"/>',
 };
 
 export function icon(name: keyof typeof ICONS | string, size = 14, strokeWidth = 2): SVGSVGElement {
@@ -90,8 +95,6 @@ export const STATUS_LABEL: Record<Status, string> = {
   stopping: "停止中",
   error: "エラー",
 };
-
-export const ENV_ORDER: Record<Env, number> = { dev: 0, stg: 1, prod: 2 };
 
 export function envBadge(env: string): HTMLSpanElement {
   const cls = env === "dev" || env === "stg" || env === "prod" ? env : "unknown";

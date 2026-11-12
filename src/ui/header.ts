@@ -55,7 +55,7 @@ function render(): void {
   );
 }
 
-const settingsBtn = h("button", { type: "button", class: "btn" }, icon("gear"), "設定・インポート");
+const settingsBtn = h("button", { type: "button", class: "btn" }, icon("gear"), "設定");
 settingsBtn.addEventListener("click", () => showView("settings"));
 
 export const headerEl = h(

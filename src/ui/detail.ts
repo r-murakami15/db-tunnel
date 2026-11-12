@@ -4,7 +4,8 @@ import { api, type Target, type TargetRuntime } from "../api";
 import { STATUS_LABEL, envBadge, errMsg, formatElapsed, h, icon, replaceChildren, statusDot } from "./dom";
 import { openEditDialog } from "./edit-dialog";
 import { confirmProd } from "./prod-dialog";
-import { on, runtimeOf, selectedTarget, showView, store } from "./store";
+import { startImport } from "./import-dialog";
+import { on, runtimeOf, selectedTarget, store } from "./store";
 import { setTerminalTarget, terminalEl, updateTitle } from "./terminal";
 import { flashCopied, toast } from "./toast";
 
@@ -91,10 +92,7 @@ function statusLine(t: Target, rt: TargetRuntime): HTMLElement {
   );
 }
 
-function actionButtons(t: Target, rt: TargetRuntime): HTMLElement[] {
-  const edit = h("button", { type: "button", class: "btn", "data-fk": "edit" }, icon("edit"), "編集");
-  edit.addEventListener("click", () => openEditDialog(t));
-
+function actionButton(t: Target, rt: TargetRuntime): HTMLElement {
   const prereqOk = store.prereq?.ok ?? false;
   const prereqTitle = store.prereq
     ? prereqOk
@@ -131,7 +129,7 @@ function actionButtons(t: Target, rt: TargetRuntime): HTMLElement[] {
       main.addEventListener("click", () => doConnect(t));
     }
   }
-  return [edit, main];
+  return main;
 }
 
 function kv(label: string, value: string, cls = "mono"): HTMLElement[] {
@@ -260,13 +258,13 @@ function renderEmpty(): void {
   if (store.targets.length === 0) {
     const add = h("button", { type: "button", class: "btn btn-primary" }, icon("plus", 14, 2.5), "接続先を追加");
     add.addEventListener("click", () => openEditDialog());
-    const imp = h("button", { type: "button", class: "btn" }, icon("download"), "JSONからインポート");
-    imp.addEventListener("click", () => showView("settings"));
+    const imp = h("button", { type: "button", class: "btn" }, icon("download"), "JSONインポート");
+    imp.addEventListener("click", () => void startImport());
     replaceChildren(
       emptyEl,
       h("div", { class: "empty-icon" }, icon("db", 28, 1.6)),
       h("h1", null, "接続先がまだありません"),
-      h("p", null, "「＋」で接続先を追加するか、「設定・インポート」からJSONファイルを取り込んでください。"),
+      h("p", null, "＋ から追加するか、JSONインポートで取り込んでください。"),
       h("div", { class: "empty-actions" }, add, imp),
     );
   } else {
@@ -305,7 +303,7 @@ export function render(): void {
       h("div", { class: "detail-title" }, h("h1", null, t.name), envBadge(t.env)),
       statusLine(t, rt),
     ),
-    actionButtons(t, rt),
+    actionButton(t, rt),
   );
   replaceChildren(cardsEl, settingsCard(t, rt), dbCard(t, rt));
   updateTitle(t);
