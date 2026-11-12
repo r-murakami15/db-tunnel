@@ -1,0 +1,24 @@
+# 使い方は docs/09-development.md を参照
+services:
+  dev:
+    build:
+      context: ./docker
+    image: db-tunnel-dev:latest
+    working_dir: /work
+    environment:
+      SDKROOT: /opt/macos-sdk/MacOSX.sdk
+    volumes:
+      - .:/work
+      # ビルド成果物・依存キャッシュ・node_modules はホストと分けて名前付きボリュームに置く
+      - cargo-target:/cargo-target
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-git:/usr/local/cargo/git
+      - node-modules:/work/node_modules
+      # macOS向けクロスビルド用のSDK（scripts/build-mac.sh がホストの Command Line Tools からコピーする）
+      - macos-sdk:/opt/macos-sdk
+volumes:
+  cargo-target:
+  cargo-registry:
+  cargo-git:
+  node-modules:
+  macos-sdk:
