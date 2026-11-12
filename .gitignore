@@ -7,3 +7,4 @@ src-tauri/target/
 src-tauri/gen/schemas/
 .DS_Store
 *.log
+.intentionally-empty-file.o
