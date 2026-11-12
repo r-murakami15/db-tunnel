@@ -29,13 +29,13 @@
 docker compose build dev
 
 # フロントエンドの依存インストールと型チェック
-docker compose run --rm dev bash -lc 'npm install && npm run typecheck'
+docker compose run --rm dev bash -c 'npm install && npm run typecheck'
 
 # Rust のフォーマット・Lint・テスト（PRで実行するものと同じ）
-docker compose run --rm dev bash -lc 'cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test'
+docker compose run --rm dev bash -c 'cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test'
 
 # 画面だけをブラウザで確認（Rustなし。モックのバックエンドで動く）
-docker compose run --rm -p 1420:1420 dev bash -lc 'npm install && npx vite --host 0.0.0.0'
+docker compose run --rm -p 1420:1420 dev bash -c 'npm install && npx vite --host 0.0.0.0'
 # → http://localhost:1420
 ```
 
