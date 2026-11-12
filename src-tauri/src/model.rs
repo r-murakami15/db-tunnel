@@ -68,6 +68,14 @@ pub struct TargetInput {
     pub local_port: Option<u16>,
 }
 
+/// 並べ替えの方向
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum MoveDirection {
+    Up,
+    Down,
+}
+
 /// save_target の結果。警告（同じポートの接続先がある等）は保存を妨げない
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

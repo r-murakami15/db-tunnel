@@ -16,8 +16,8 @@ use zeroize::Zeroizing;
 
 use crate::import_export;
 use crate::model::{
-    AppSettings, ConfigInfo, ImportMode, ImportPreview, ImportResult, SaveResult, Target,
-    TargetInput, DEFAULT_LOCAL_PORT,
+    AppSettings, ConfigInfo, ImportMode, ImportPreview, ImportResult, MoveDirection, SaveResult,
+    Target, TargetInput, DEFAULT_LOCAL_PORT,
 };
 
 pub use keychain::{KeyProvider, KeychainKeyProvider, MemoryKeyProvider};
@@ -189,8 +189,45 @@ impl Store {
         &self.data.settings
     }
 
-    /// 接続先を追加・更新して保存する
+    /// 接続先を追加・更新して保存する（新規は末尾に追加）
     pub fn save_target(&mut self, input: TargetInput) -> Result<SaveResult, StoreError> {
+        self.save_inner(input, None)
+    }
+
+    /// 接続先を複製する。input を新しい接続先として、複製元のすぐ下に追加する
+    pub fn duplicate_target(
+        &mut self,
+        source_id: &str,
+        mut input: TargetInput,
+    ) -> Result<SaveResult, StoreError> {
+        if self.target(source_id).is_none() {
+            return Err(StoreError::NotFound(source_id.to_string()));
+        }
+        input.id = None;
+        self.save_inner(input, Some(source_id))
+    }
+
+    /// 一覧の並び順で1つ上・下へ移動する。端の場合は何もしない
+    pub fn move_target(&mut self, id: &str, direction: MoveDirection) -> Result<(), StoreError> {
+        let Some(index) = self.data.targets.iter().position(|t| t.id == id) else {
+            return Err(StoreError::NotFound(id.to_string()));
+        };
+        let other = match direction {
+            MoveDirection::Up if index > 0 => index - 1,
+            MoveDirection::Down if index + 1 < self.data.targets.len() => index + 1,
+            _ => return Ok(()),
+        };
+        let mut data = self.data.clone();
+        data.targets.swap(index, other);
+        self.commit(data)
+    }
+
+    /// 追加・更新の本体。insert_after が指定されていれば新規はその直後に入れる
+    fn save_inner(
+        &mut self,
+        input: TargetInput,
+        insert_after: Option<&str>,
+    ) -> Result<SaveResult, StoreError> {
         let errors = import_export::validate_fields(
             &input.name,
             &input.profile,
@@ -236,7 +273,13 @@ impl Store {
         let mut data = self.data.clone();
         match data.targets.iter_mut().find(|t| t.id == id) {
             Some(t) => *t = target.clone(),
-            None => data.targets.push(target.clone()),
+            None => {
+                let pos = insert_after
+                    .and_then(|after| data.targets.iter().position(|t| t.id == after))
+                    .map(|i| i + 1)
+                    .unwrap_or(data.targets.len());
+                data.targets.insert(pos, target.clone());
+            }
         }
         self.commit(data)?;
         Ok(SaveResult { target, warnings })

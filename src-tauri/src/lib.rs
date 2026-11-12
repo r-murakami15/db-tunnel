@@ -57,6 +57,8 @@ pub fn run() {
             commands::list_targets,
             commands::save_target,
             commands::delete_target,
+            commands::move_target,
+            commands::duplicate_target,
             commands::list_profiles,
             commands::list_runtimes,
             commands::connect,

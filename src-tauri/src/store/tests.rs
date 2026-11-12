@@ -394,3 +394,82 @@ fn export_roundtrip() {
         .iter()
         .all(|r| r.judgement == ImportJudgement::Overwrite));
 }
+
+fn names(store: &Store) -> Vec<String> {
+    store.targets().iter().map(|t| t.name.clone()).collect()
+}
+
+#[test]
+fn move_target_swaps_neighbours_and_persists() {
+    let dir = tempfile::tempdir().unwrap();
+    let keys = Arc::new(MemoryKeyProvider::new());
+    let mut store = open(dir.path(), &keys);
+    let a = store
+        .save_target(input("A", "p", Env::Dev, "a", None))
+        .unwrap()
+        .target;
+    store
+        .save_target(input("B", "p", Env::Stg, "a", None))
+        .unwrap();
+    let c = store
+        .save_target(input("C", "p", Env::Prod, "a", None))
+        .unwrap()
+        .target;
+
+    store.move_target(&c.id, MoveDirection::Up).unwrap();
+    assert_eq!(names(&store), ["A", "C", "B"]);
+    store.move_target(&a.id, MoveDirection::Down).unwrap();
+    assert_eq!(names(&store), ["C", "A", "B"]);
+
+    // 端では何もしない
+    store.move_target(&c.id, MoveDirection::Up).unwrap();
+    store
+        .move_target(&store.targets()[2].id.clone(), MoveDirection::Down)
+        .unwrap();
+    assert_eq!(names(&store), ["C", "A", "B"]);
+
+    assert!(matches!(
+        store.move_target("nope", MoveDirection::Up),
+        Err(StoreError::NotFound(_))
+    ));
+
+    // 再起動後も並び順が保たれる
+    let reopened = open(dir.path(), &keys);
+    assert_eq!(names(&reopened), ["C", "A", "B"]);
+}
+
+#[test]
+fn duplicate_target_inserts_after_source() {
+    let dir = tempfile::tempdir().unwrap();
+    let keys = Arc::new(MemoryKeyProvider::new());
+    let mut store = open(dir.path(), &keys);
+    let a = store
+        .save_target(input("A", "p", Env::Dev, "a", None))
+        .unwrap()
+        .target;
+    store
+        .save_target(input("B", "p", Env::Stg, "a", None))
+        .unwrap();
+
+    // 同じ組み合わせのままでは追加できない
+    let mut same = input("A のコピー", "p", Env::Dev, "a", None);
+    same.id = Some(a.id.clone());
+    assert!(matches!(
+        store.duplicate_target(&a.id, same),
+        Err(StoreError::Duplicate(_))
+    ));
+    assert_eq!(names(&store), ["A", "B"]);
+
+    // id を渡しても無視され、新しい接続先として複製元の直後に入る
+    let mut copy = input("A のコピー", "p", Env::Prod, "a", Some(13306));
+    copy.id = Some(a.id.clone());
+    let res = store.duplicate_target(&a.id, copy).unwrap();
+    assert_ne!(res.target.id, a.id);
+    assert_eq!(names(&store), ["A", "A のコピー", "B"]);
+    assert!(!res.warnings.is_empty(), "同じポートの警告が出る");
+
+    assert!(matches!(
+        store.duplicate_target("nope", input("X", "p", Env::Dev, "x", None)),
+        Err(StoreError::NotFound(_))
+    ));
+}

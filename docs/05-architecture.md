@@ -24,7 +24,7 @@ flowchart LR
     AWS["AWS<br/>(EC2 / RDS / Secrets Manager / SSM)"]
 
     UI -- "コマンド" --> CMD
-    CMD -- "イベント<br/>(target-status / log-line)" --> UI
+    CMD -- "イベント<br/>(target-status / log-line /<br/>quit-requested)" --> UI
 
     CMD --> STORE
     CMD --> CONN
@@ -48,12 +48,23 @@ flowchart LR
 | 種類 | 名前 | 内容 |
 | --- | --- | --- |
 | コマンド | `list_targets` / `save_target` / `delete_target` | 接続先の一覧・保存・削除 |
+| コマンド | `move_target(id, direction)` | 一覧で1つ上・下へ移動し、移動後の一覧を返す（direction は up / down） |
+| コマンド | `duplicate_target(sourceId, input)` | 複製元のすぐ下に新しい接続先を追加する（重複判定・入力チェックは `save_target` と同じ） |
+| コマンド | `list_profiles` | `~/.aws/config` のプロファイル一覧 |
+| コマンド | `list_runtimes` | 接続先ごとの現在の状態 |
 | コマンド | `connect(id)` / `disconnect(id)` | 接続の開始・停止 |
 | コマンド | `reveal_password(id)` / `copy_password(id)` | 表示またはコピーするときだけパスワードを画面に渡す |
-| コマンド | `import_preview(path)` / `import_apply` / `export(path)` | インポートとエクスポート |
+| コマンド | `copy_text(text)` | Host・Port・接続コマンドなどをクリップボードへコピー |
+| コマンド | `get_logs(id)` / `clear_logs(id)` / `save_logs(id, path)` | ログの取得・クリア・ファイルへの保存 |
+| コマンド | `import_preview(path)` / `import_apply` / `export_targets(path)` | インポートとエクスポート |
 | コマンド | `check_prerequisites` | AWS CLIとPluginの有無とバージョン |
+| コマンド | `set_tool_paths` | aws / session-manager-plugin のパスを指定する |
+| コマンド | `get_settings` / `set_last_selected(id)` | アプリ設定の取得、最後に選んだ接続先の保存 |
+| コマンド | `get_config_info` / `open_config_dir` | 設定ファイルの暗号化状態と保存場所、保存先フォルダを開く |
+| コマンド | `quit_app` | 接続中のセッションをすべて終了してアプリを閉じる |
 | イベント | `target-status` | 接続先ID、状態、メッセージ |
 | イベント | `log-line` | 接続先ID、時刻、出どころ（app / ssm）、stdout / stderr、本文 |
+| イベント | `quit-requested` | 接続中の件数。画面で確認後に `quit_app` を呼ぶ |
 
 ## 6.2 接続の状態
 

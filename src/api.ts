@@ -24,6 +24,8 @@ export interface TargetInput {
   localPort?: number | null;
 }
 
+export type MoveDirection = "up" | "down";
+
 export interface SaveResult {
   target: Target;
   warnings: string[];
@@ -112,6 +114,12 @@ export const api = {
   listTargets: () => invoke<Target[]>("list_targets"),
   saveTarget: (input: TargetInput) => invoke<SaveResult>("save_target", { input }),
   deleteTarget: (id: string) => invoke<void>("delete_target", { id }),
+  /** 一覧の並び順で1つ上・下へ移動し、移動後の一覧を返す（端では何もしない） */
+  moveTarget: (id: string, direction: MoveDirection) =>
+    invoke<Target[]>("move_target", { id, direction }),
+  /** 複製元のすぐ下に新しい接続先として追加する（input.id は無視される） */
+  duplicateTarget: (sourceId: string, input: TargetInput) =>
+    invoke<SaveResult>("duplicate_target", { sourceId, input }),
   listProfiles: () => invoke<string[]>("list_profiles"),
 
   /** 全接続先の実行時状態 */

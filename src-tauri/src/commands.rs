@@ -104,6 +104,29 @@ pub fn delete_target(state: State<'_, Arc<AppState>>, id: String) -> CmdResult<(
 }
 
 #[tauri::command]
+pub fn move_target(
+    state: State<'_, Arc<AppState>>,
+    id: String,
+    direction: MoveDirection,
+) -> CmdResult<Vec<Target>> {
+    let mut store = state.store();
+    store.move_target(&id, direction).map_err(err)?;
+    Ok(store.targets().to_vec())
+}
+
+#[tauri::command]
+pub fn duplicate_target(
+    state: State<'_, Arc<AppState>>,
+    source_id: String,
+    input: TargetInput,
+) -> CmdResult<SaveResult> {
+    state
+        .store()
+        .duplicate_target(&source_id, input)
+        .map_err(err)
+}
+
+#[tauri::command]
 pub fn list_profiles() -> Vec<String> {
     aws::list_profiles()
 }
