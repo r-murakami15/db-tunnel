@@ -1,4 +1,4 @@
-// メイン画面のヘッダー（ロゴ・前提ツールの状態・設定ボタン）
+// メイン画面のヘッダー（アプリ名・前提ツールの状態・設定ボタン）
 
 import { openUrl } from "@tauri-apps/plugin-opener";
 import type { ToolStatus } from "../api";
@@ -64,7 +64,6 @@ export const headerEl = h(
   h(
     "div",
     { class: "brand" },
-    h("div", { class: "logo" }, icon("db", 16, 2)),
     h("span", { class: "brand-name" }, "DB Tunnel"),
   ),
   pillsEl,
